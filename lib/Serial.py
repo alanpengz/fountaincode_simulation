@@ -21,7 +21,7 @@ from rs_image_lib import rs_encode_image
 
 LIB_PATH = os.path.dirname(__file__)
 DOC_PATH = os.path.join(LIB_PATH, '../doc')
-LENA_IMG = os.path.join(DOC_PATH, 'lena.png')
+LENA_IMG = os.path.join(DOC_PATH, 'lena.jpg')
 GAKKI_PATH = os.path.join(DOC_PATH, 'gakki128.png')
 TEST_PATH = os.path.join(DOC_PATH, 'test')
 SIM_PATH = os.path.join(LIB_PATH, '../simulation')
@@ -131,6 +131,7 @@ class Sender:
         if self.is_need_img_process():
             print('processing image: {:s}'.format(self.img_path))
             img = load_img(self.img_path)
+            print("++++++++++++++++++++", len(img.tobytes()))
             (width, height) = img.size
             mat_r = np.empty((width, height))
             mat_g = np.empty((width, height))

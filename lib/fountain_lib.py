@@ -61,31 +61,7 @@ def x_o_r(bytes1, bytes2):  # 传入两个数，并返回它们的异或结果�
 
     return result_bytes
 
-def randChunkNums(num_chunks):
-    '''
-    size 是每次选取的度数，这里选取的是一个度函数，size 分布是
-    度函数的文章要在这里做, 这里的度函数是一个 5 到 K 的均匀分布
-    num_chunks : int, 编码块总数量
-    return : list, 被选中的编码块序号
-    '''
-    size = random.randint(1,min(5, num_chunks))
-    # random.sample 是一个均匀分布的采样
-    return random.sample(range(num_chunks), size)
-
-def robust_randChunkNums(num_chunks):
-    size = robust_soliton(num_chunks).__next__()
-    return [ii for ii in random.sample(range(num_chunks), size)]
-
-def all_at_once_randChunkNums(chunks):
-    # return random.sample(chunks, 1)
-    return [ii for ii in np.random.choice(chunks, 1, False)]
-
-def all_at_once_solition(K):
-    d = [ii + 1 for ii in range(K)]
-    d_f = [1.0 if ii==1 else 0 for ii in d]
-    while 1:
-        yield np.random.choice(d, 1, False, d_f)[0]
-
+# 度分布函数
 def soliton(K):
     ''' 理想弧波函数 '''
     d = [ii + 1 for ii in range(K)]
@@ -115,6 +91,70 @@ def robust_soliton(K, c= 0.03, delta= 0.05):
         # i = np.random.choice(d, 1, False, u_d_f)[0]
         yield np.random.choice(d, 1, False, u_d_f)[0]             # 返回一个度值
 
+def fixed_degree_distribution_func():
+#'''Shokrollahi, 5.78'''
+    d = [1, 2, 3, 4, 5, 8, 9, 19, 65, 66]
+    d_f = [0.007969, 0.49357, 0.16622, 0.072646, 0.082558, 0.056058, 0.037229, 0.05559, 0.025023, 0.003137]
+    while True:
+        i = np.random.choice(d, 1, False, d_f)[0]
+        yield i
+
+def poisson_func(k):
+    d = [1, 2, 3, 4, 5, 8, 9, 19, 65, 66]
+    tmp = 1.0 / (k * log(k))
+    d_f = [0.003269+65*tmp, 0.49357-17*tmp, 0.16622-33*tmp, 0.072646-15*tmp, 0.082558-tmp, 0.056028-9*tmp, 0.037229+8*tmp, 0.05559, 0.029723-tmp, 0.003167+3*tmp]
+    while True:
+        yield np.random.choice(d, 1, False, d_f)[0]
+
+def binary_exp_func(k):
+    d = [ii + 1 for ii in range(k)] 
+    d_f = [1.0 / 2**(k-1) if ii == k else 1.0 / (2 ** ii) for ii in d]
+    while True:
+        yield np.random.choice(d, 1, False, d_f)[0]
+
+def switch_distribution_func(i, a, k):
+    while True:
+        if i <= a * k:
+            yield binary_exp_func(k)
+        else:
+            yield robust_soliton(k)
+
+
+# 通过度值随机选择数据块编号
+def randChunkNums(num_chunks):
+    '''
+    size 是每次选取的度数，这里选取的是一个度函数，size 分布是
+    度函数的文章要在这里做, 这里的度函数是一个 5 到 K 的均匀分布
+    num_chunks : int, 编码块总数量
+    return : list, 被选中的编码块序号
+    '''
+    size = random.randint(1,min(5, num_chunks))
+    # random.sample 是一个均匀分布的采样
+    return random.sample(range(num_chunks), size)
+
+def robust_randChunkNums(num_chunks):
+    size = robust_soliton(num_chunks).__next__()
+    return [ii for ii in random.sample(range(num_chunks), size)]
+
+def all_at_once_randChunkNums(chunks):
+    # return random.sample(chunks, 1)
+    return [ii for ii in np.random.choice(chunks, 1, False)]
+
+def switch_randChunkNums(chunk_id, num_chunks, a=0.075):
+    if chunk_id <= a * num_chunks:
+        size = binary_exp_func(num_chunks).__next__()
+    else:
+        size = robust_soliton(num_chunks).__next__()
+    return [ii for ii in random.sample(range(num_chunks), size)]
+
+def fixed_degree_randChunkNums(num_chunks):
+    size = fixed_degree_distribution_func().__next__()
+    return [ii for ii in random.sample(range(num_chunks), size)]
+
+def mfixed_degree_randChunkNums(num_chunks):
+    size = poisson_func(num_chunks).__next__()
+    return [ii for ii in random.sample(range(num_chunks), size)]
+
 
 
 class Droplet:
@@ -134,6 +174,17 @@ class Droplet:
         random.seed(self.seed)
         np.random.seed(self.seed)
         return all_at_once_randChunkNums(self.process)
+
+    def fixed_degree_chunkNums(self):
+        random.seed(self.seed)
+        np.random.seed(self.seed)
+        return fixed_degree_randChunkNums(self.num_chunks)
+
+    def mfixed_degree_ChunkNums(self):
+        random.seed(self.seed)
+        np.random.seed(self.seed)
+        return mfixed_degree_randChunkNums(self.num_chunks)
+
 
     def toBytes(self):
         '''
@@ -205,7 +256,7 @@ class Fountain(object):
 
 class EW_Fountain(Fountain):
     ''' 扩展窗喷泉码 '''
-    def __init__(self, data, chunk_size, ew_process=[], seed=None, w1_size=0.1, w1_pro=0.084):
+    def __init__(self, data, chunk_size, ew_process=[], seed=None, w1_size=0.15, w1_pro=0.084):
         Fountain.__init__(self, data, chunk_size=chunk_size, seed=None)
         # logging.info("-----------------EW_Fountain------------")
         self.w1_p = w1_size
@@ -278,7 +329,7 @@ class EW_Fountain(Fountain):
 
 class EW_Droplet(Droplet):
     '''扩展窗喷泉码专用水滴, 计算水滴使用的数据块列表'''
-    def __init__(self, data, seed, num_chunks, process, w1_size=0.1, w1_pro=0.084):
+    def __init__(self, data, seed, num_chunks, process, w1_size=0.15, w1_pro=0.084):
         Droplet.__init__(self, data, seed, num_chunks, process)
         m = ' ' * num_chunks * len(data)
         self.ower = EW_Fountain(m, len(self.data), w1_size=w1_size, w1_pro=w1_pro, ew_process=process)
@@ -292,7 +343,6 @@ class EW_Droplet(Droplet):
         random.seed(self.seed)
         np.random.seed(self.seed)
         return self.ower.EW_all_at_once_RandChunkNums()
-
 
 
 class Glass:
@@ -317,10 +367,8 @@ class Glass:
         self.updateEntry(entry)
 
     def droplet_from_Bytes(self, d_bytes):
-
         byte_factory = bitarray.bitarray(endian='big')
         byte_factory.frombytes(d_bytes[0:2])
-
         num_chunks = int(byte_factory.to01(), base=2)
 
         byte_factory1 = bitarray.bitarray(endian='big')
@@ -424,8 +472,11 @@ class Glass:
         return count
 
 
+suffix_list = ['123.txt']
+suffix_list = ['152.txt']
 
-suffix_list = ['50.txt', '100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
+
+suffix_list = ['50.txt', '100.txt', '123.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
 def test_LT_fountain():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
     avg_drops_list = [0]*len(suffix_list)
@@ -497,11 +548,11 @@ def test_LT_feedback_fountain():
                 a_drop = fountain.droplet()       # send
                     
                 glass.addDroplet(a_drop)          # recv
-                if(glass.dropid >= K):
+                if(glass.dropid >= round(0.8*K)):
                     glass.all_at_once = True
                     fountain.all_at_once = True
                     # 之后每10个包反馈进度
-                    if((glass.dropid-K)%10 == 0):
+                    if((glass.dropid-round(0.8*K))%5 == 0):
                         ack_num += 1
                         fountain.chunk_process = glass.getProcess()
                 
@@ -517,10 +568,10 @@ def test_LT_feedback_fountain():
             logging.info("feedback_K=" + str(fountain.num_chunks) +" times: " + str(times) + 'done, receive_drop_used: ' + str(glass.dropid))
             times += 1
 
-        # res = pd.DataFrame({'num_chunks':num_chunks_list, 
-        #     'times':times_list, 
-        #     'drop_num_used':drop_num_used_list})
-        # res.to_csv(os.path.join(SIM_PATH, 'feedback_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+        res = pd.DataFrame({'num_chunks':num_chunks_list, 
+            'times':times_list, 
+            'drop_num_used':drop_num_used_list})
+        res.to_csv(os.path.join(SIM_PATH, 'RSD_LT/0.8K_5/feedback_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
         avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
         avg_idx += 1
@@ -529,7 +580,7 @@ def test_LT_feedback_fountain():
     
     avg_res = pd.DataFrame({'K': [ii.split('.')[0] for ii in suffix_list], 
             'avgs':avg_drops_list, 'feedback_packet_avgs':avg_acknums_list})
-    avg_res.to_csv(os.path.join(SIM_PATH, 'feedback_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+    avg_res.to_csv(os.path.join(SIM_PATH, 'RSD_LT/0.8K_5/feedback_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 def test_ew_fountain():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
@@ -552,9 +603,9 @@ def test_ew_fountain():
             ew_drop = None
             while not glass.isDone():
                 a_drop = fountain.droplet()       # send
-                # ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks)
+                ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, a_drop.process)
 
-                glass.addDroplet(a_drop)          # recv
+                glass.addDroplet(ew_drop)          # recv
 
             num_chunks_list[times] = fountain.num_chunks
             times_list[times] = times
@@ -600,14 +651,14 @@ def test_ew_feedback_fountain():
             ew_drop = None
             while not glass.isDone():
                 a_drop = fountain.droplet()       # send
-                # ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, a_drop.process)
+                ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, a_drop.process)
 
-                glass.addDroplet(a_drop)          # recv
-                if(glass.dropid >= K):
+                glass.addDroplet(ew_drop)          # recv
+                if(glass.dropid >= round(0.8*K)):
                     glass.all_at_once = True
                     fountain.all_at_once = True
                     # 之后每10个包反馈进度
-                    if((glass.dropid-K)%10 == 0):
+                    if((glass.dropid-round(0.8*K))%5 == 0):
                         ack_num += 1
                         fountain.chunk_process = glass.getProcess()
                 
@@ -626,7 +677,7 @@ def test_ew_feedback_fountain():
         res = pd.DataFrame({'num_chunks':num_chunks_list, 
             'times':times_list, 
             'drop_num_used':drop_num_used_list})
-        res.to_csv(os.path.join(SIM_PATH, 'feedback_EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+        res.to_csv(os.path.join(SIM_PATH, 'RSD_EW_LT/drop改ew_drop后/0.8K_5/feedback_EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
         avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
         avg_idx += 1
@@ -635,16 +686,17 @@ def test_ew_feedback_fountain():
     
     avg_res = pd.DataFrame({'K': [ii.split('.')[0] for ii in suffix_list], 
             'avgs':avg_drops_list, 'feedback_packet_avgs':avg_acknums_list})
-    avg_res.to_csv(os.path.join(SIM_PATH, 'feedback_EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+    avg_res.to_csv(os.path.join(SIM_PATH, 'RSD_EW_LT/drop改ew_drop后/0.8K_5/feedback_EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 
 
 
 if __name__ == "__main__":
     # test_LT_fountain()
-    # test_LT_feedback_fountain()
-    test_ew_fountain()
+    test_LT_feedback_fountain()
+    # test_ew_fountain()
     test_ew_feedback_fountain()
     pass
 
+    
 
