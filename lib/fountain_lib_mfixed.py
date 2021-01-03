@@ -465,7 +465,10 @@ class Glass:
 suffix_list = ['123.txt']
 # suffix_list = ['152.txt']
 
-suffix_list = ['100.txt', '123.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
+suffix_list = ['115.txt', '141.txt']
+
+
+# suffix_list = ['100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
 def test_LT_fountain():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
     avg_drops_list = [0]*len(suffix_list)
@@ -537,11 +540,11 @@ def test_LT_feedback_fountain():
                 a_drop = fountain.droplet()       # send
                     
                 glass.addDroplet(a_drop)          # recv
-                if(glass.dropid >= round(0.8*K)):
+                if(glass.dropid >= K):
                     glass.all_at_once = True
                     fountain.all_at_once = True
                     # 之后每10个包反馈进度
-                    if((glass.dropid-round(0.8*K))%5 == 0):
+                    if((glass.dropid-K)%25 == 0):
                         ack_num += 1
                         fountain.chunk_process = glass.getProcess()
                 
@@ -560,7 +563,7 @@ def test_LT_feedback_fountain():
         res = pd.DataFrame({'num_chunks':num_chunks_list, 
             'times':times_list, 
             'drop_num_used':drop_num_used_list})
-        res.to_csv(os.path.join(SIM_PATH, 'mfixed/0.8K_5/feedback_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+        res.to_csv(os.path.join(SIM_PATH, 'mfixed/K_25/feedback_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
         avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
         avg_idx += 1
@@ -569,7 +572,7 @@ def test_LT_feedback_fountain():
     
     avg_res = pd.DataFrame({'K': [ii.split('.')[0] for ii in suffix_list], 
             'avgs':avg_drops_list, 'feedback_packet_avgs':avg_acknums_list})
-    avg_res.to_csv(os.path.join(SIM_PATH, 'mfixed/0.8K_5/mfixed_degree_feedback_LT(K-avgs)' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+    avg_res.to_csv(os.path.join(SIM_PATH, 'mfixed/K_25/mfixed_degree_feedback_LT(K-avgs)' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 def test_ew_fountain():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
@@ -643,17 +646,17 @@ def test_ew_feedback_fountain():
                 ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, a_drop.process)
 
                 glass.addDroplet(ew_drop)          # recv
-                if(glass.dropid >= round(0.8*K)):
+                if(glass.dropid >= K):
                     glass.all_at_once = True
                     fountain.all_at_once = True
                     # 之后每10个包反馈进度
-                    if((glass.dropid-round(0.8*K))%5 == 0):
+                    if((glass.dropid-K)%25 == 0):
                         ack_num += 1
                         fountain.chunk_process = glass.getProcess()
                 
 
-                # logging.info('+++++++++++++++++++++++++++++')
-                # logging.info(glass.getString())
+            # logging.info('+++++++++++++++++++++++++++++')
+            # logging.info(glass.getString())
 
             num_chunks_list[times] = fountain.num_chunks
             times_list[times] = times
@@ -666,7 +669,7 @@ def test_ew_feedback_fountain():
         res = pd.DataFrame({'num_chunks':num_chunks_list, 
             'times':times_list, 
             'drop_num_used':drop_num_used_list})
-        res.to_csv(os.path.join(SIM_PATH, 'mfixed/0.8K_5/feedback_EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+        res.to_csv(os.path.join(SIM_PATH, 'mfixed/K_25/feedback_EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
         avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
         avg_idx += 1
@@ -675,16 +678,17 @@ def test_ew_feedback_fountain():
     
     avg_res = pd.DataFrame({'K': [ii.split('.')[0] for ii in suffix_list], 
             'avgs':avg_drops_list, 'feedback_packet_avgs':avg_acknums_list})
-    avg_res.to_csv(os.path.join(SIM_PATH, 'mfixed/0.8K_5/mfixed_degree_feedback_EW_LT(K-avgs)' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+    avg_res.to_csv(os.path.join(SIM_PATH, 'mfixed/K_25/mfixed_degree_feedback_EW_LT(K-avgs)' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 
 
 
 if __name__ == "__main__":
-    # test_LT_fountain()
-    test_LT_feedback_fountain()
-    # test_ew_fountain()
-    test_ew_feedback_fountain()
+    test_LT_fountain()
+    # test_LT_feedback_fountain()
+    test_ew_fountain()
+    # test_ew_feedback_fountain()
+
     pass
 
     
