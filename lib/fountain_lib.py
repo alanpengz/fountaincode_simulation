@@ -229,9 +229,6 @@ class Fountain(object):
         else:
             self.chunk_selected = all_at_once_randChunkNums(self.chunk_process)
 
-        # chunk_selected = randChunkNums(self.num_chunks)
-        # logging.info("seed: {}".format(self.seed))
-        # logging.info("send chunk list: {}".format(self.chunk_selected))
         data = None
         for num in self.chunk_selected:
             if data is None:
@@ -256,7 +253,7 @@ class Fountain(object):
 
 class EW_Fountain(Fountain):
     ''' 扩展窗喷泉码 '''
-    def __init__(self, data, chunk_size, ew_process=[], seed=None, w1_size=0.15, w1_pro=0.084):
+    def __init__(self, data, chunk_size, ew_process=[], seed=None, w1_size=0.6, w1_pro=0.6):
         Fountain.__init__(self, data, chunk_size=chunk_size, seed=None)
         # logging.info("-----------------EW_Fountain------------")
         self.w1_p = w1_size
@@ -291,7 +288,7 @@ class EW_Fountain(Fountain):
                 # data = x_o_r(data, self.chunk(num))
 
         # logging.info('send chunk_list : {}'.format(chunk_selected))
-        return EW_Droplet(data, self.seed, self.num_chunks, self.chunk_process)
+        return EW_Droplet(data, self.seed, self.num_chunks, self.chunk_process, self.w1_p, self.w1_pro)
 
     def EW_robust_RandChunkNums(self, num_chunks):
         '''扩展窗的不同在这里'''
@@ -329,7 +326,7 @@ class EW_Fountain(Fountain):
 
 class EW_Droplet(Droplet):
     '''扩展窗喷泉码专用水滴, 计算水滴使用的数据块列表'''
-    def __init__(self, data, seed, num_chunks, process, w1_size=0.15, w1_pro=0.084):
+    def __init__(self, data, seed, num_chunks, process, w1_size=0.6, w1_pro=0.6):
         Droplet.__init__(self, data, seed, num_chunks, process)
         m = ' ' * num_chunks * len(data)
         self.ower = EW_Fountain(m, len(self.data), w1_size=w1_size, w1_pro=w1_pro, ew_process=process)
@@ -355,6 +352,9 @@ class Glass:
         self.chunk_bit_size = 0
         self.dropid = 0
         self.all_at_once = False
+
+        self.w1_done_dropid = 0
+        self.w1_done = False
         
     def addDroplet(self, drop):
         self.dropid += 1
@@ -462,7 +462,13 @@ class Glass:
         return process
 
     def is_w1_done(self, w1_size):
-        return None not in self.chunks[:int(round(self.num_chunks * w1_size))]
+        if None not in self.chunks[:int(round(self.num_chunks * w1_size))]:
+            if self.w1_done == False:
+                self.w1_done_dropid = self.dropid
+                self.w1_done = True
+            return True
+        else:
+            return False 
 
     def chunksDone(self):
         count = 0
@@ -475,9 +481,10 @@ class Glass:
 suffix_list = ['123.txt']
 suffix_list = ['152.txt']
 
-suffix_list = ['115.txt', '141.txt']
+suffix_list = ['115.txt']
 
-# suffix_list = ['50.txt', '100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
+suffix_list = ['50.txt', '100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
+# suffix_list = ['900.txt','950.txt','1000.txt']
 def test_LT_fountain():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
     avg_drops_list = [0]*len(suffix_list)
@@ -618,14 +625,14 @@ def test_ew_fountain():
         # res = pd.DataFrame({'num_chunks':num_chunks_list, 
         #     'times':times_list, 
         #     'drop_num_used':drop_num_used_list})
-        # res.to_csv(os.path.join(SIM_PATH, 'EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+        # res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/no_feedback/EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
         avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
         avg_idx += 1
     
     avg_res = pd.DataFrame({'K': [ii.split('.')[0] for ii in suffix_list], 
             'avgs':avg_drops_list})
-    avg_res.to_csv(os.path.join(SIM_PATH, 'EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+    avg_res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/no_feedback/EW_avgs(K=115)' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 def test_ew_feedback_fountain():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
@@ -651,6 +658,7 @@ def test_ew_feedback_fountain():
             ack_num = 0
             ew_drop = None
             while not glass.isDone():
+                # Timer(0.1, send_n_recv)
                 a_drop = fountain.droplet()       # send
                 ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, a_drop.process)
 
@@ -660,6 +668,13 @@ def test_ew_feedback_fountain():
                     fountain.all_at_once = True
                     # 之后每10个包反馈进度
                     if((glass.dropid-K)%25== 0):
+                        # Timer(1.8, sender_gets_process)
+
+                        # 或者按包数：
+                        # process = glass.getProcess()
+                        # tmp_dropid = glass.dropid
+                        # if(glass.dropid-tmp_dropid==18):
+                        #     sender_get_process(process)
                         ack_num += 1
                         fountain.chunk_process = glass.getProcess()
                 
@@ -689,14 +704,70 @@ def test_ew_feedback_fountain():
             'avgs':avg_drops_list, 'feedback_packet_avgs':avg_acknums_list})
     avg_res.to_csv(os.path.join(SIM_PATH, 'RSD_EW_LT/drop改ew_drop后/K_25/feedback_EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
+def test_ew_w1pro_overhead():
+    w1_pro_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    w1_pro_list = [0.9]
+    w1_avg_drops_list = [0]*len(w1_pro_list)
+    w2_avg_drops_list = [0]*len(w1_pro_list)
+    avg_idx = 0
+
+    for p in w1_pro_list:
+        m = open(DOC_PATH + '/text115.txt', 'r').read()
+        # 测试100次
+        w1pro_list = [0]*100
+        times_list = [0]*100
+        w1_drops_used_list = [0]*100
+        w2_drops_used_list = [0]*100
+
+        times = 0
+        K = 0
+        while times < 100:
+            fountain = EW_Fountain(m, 1, w1_size=0.6, w1_pro=p)
+            K = fountain.num_chunks
+            glass = Glass(fountain.num_chunks)
+            ew_drop = None
+            w1_done = False
+            while not glass.isDone():
+                a_drop = fountain.droplet()       # send
+                ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, a_drop.process, w1_size=0.6, w1_pro=p)
+
+                glass.addDroplet(ew_drop)          # recv
+
+                if w1_done == False:
+                    if glass.is_w1_done(0.6):
+                        w1_drops_used_list[times] = glass.w1_done_dropid
+                        w1_done = True
+
+            w1pro_list[times] = p
+            times_list[times] = times
+            w2_drops_used_list[times] = glass.dropid
+
+            logging.info("EW(w1_size=0.6) w1_pro=" + str(p) +" times: " + str(times) + 'done, w1_drops_used: ' + str(glass.w1_done_dropid) + ', w2_drops_used: '+ str(glass.dropid))
+            times += 1
+
+        res = pd.DataFrame({'w1_pro':w1pro_list, 
+            'times':times_list, 
+            'w1_drops_used':w1_drops_used_list,
+            'w2_drops_used':w2_drops_used_list})
+        res.to_csv(os.path.join(SIM_PATH, 'w1_pro选择/EW_RSD(w1_size=0.6)_w1_pro=' + str(p) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+
+        w1_avg_drops_list[avg_idx] = float(sum(w1_drops_used_list) / len(w1_drops_used_list))
+        w2_avg_drops_list[avg_idx] = float(sum(w2_drops_used_list) / len(w2_drops_used_list))
+        avg_idx += 1
+    
+    avg_res = pd.DataFrame({'w1_pro': w1_pro_list, 
+            'w1_avgs': w1_avg_drops_list,
+            'w2_avgs': w2_avg_drops_list})
+    avg_res.to_csv(os.path.join(SIM_PATH, 'w1_pro选择/EW_RSD(w1_size=0.6)_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 
 
 if __name__ == "__main__":
-    test_LT_fountain()
+    # test_LT_fountain()
     # test_LT_feedback_fountain()
-    test_ew_fountain()
+    # test_ew_fountain()
     # test_ew_feedback_fountain()
+    test_ew_w1pro_overhead()
 
     pass
 
