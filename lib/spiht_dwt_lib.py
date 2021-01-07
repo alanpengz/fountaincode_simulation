@@ -347,23 +347,24 @@ def progressive_test():
     width = 256
     height = 256
 
-    out_file_r = OUT_BIN_R
-    out_file_g = OUT_BIN_G
-    out_file_b = OUT_BIN_B
+    out_file_r = '../doc/lena.bmp_r'
+    out_file_g = '../doc/lena.bmp_g'
+    out_file_b = '../doc/lena.bmp_b'
 
     part_num = 100
+    part_lost_list = [93.06]
     out_file_size = len(file_to_code(out_file_r))
     psnr_list = [0] * part_num
     file_list = [' '] * part_num
     size_list = [0] * part_num
 
     tap = 0
-    test_res_dir = os.path.join(PRO_PATH,time.asctime().replace(' ', '_').replace(':', '_'))
-    compose_dir = os.path.join(test_res_dir, 'composed.bmp')
-    os.mkdir(test_res_dir)
+    # test_res_dir = os.path.join(PRO_PATH,time.asctime().replace(' ', '_').replace(':', '_'))
+    # compose_dir = os.path.join(test_res_dir, 'composed.bmp')
+    # os.mkdir(test_res_dir)
 
-    for k in tqdm([ii + 1 for ii in range(part_num)]):
-        read_size = int(float(k) / part_num * out_file_size)
+    for k in tqdm([ii for ii in part_lost_list]):
+        read_size = int(float(k) / 100 * out_file_size)
         read_bits_r = file_to_code(out_file_r)[:read_size]
         read_bits_g = file_to_code(out_file_g)[:read_size]
         read_bits_b = file_to_code(out_file_b)[:read_size]
@@ -385,20 +386,20 @@ def progressive_test():
                     B = I_W_re_b[i, j]
                     new_value = (int(R), int(G), int(B))
                     dwt_img.putpixel((i, j), new_value)
-            temp_name = os.path.join(test_res_dir, 'lena_' + str(k)+'_'+str(part_num)+".bmp")
+            temp_name = os.path.join(SIM_PATH, 'lena_' + str(k)+'_'+str(part_num)+".bmp")
             dwt_img.show()
             # time.sleep(1)
-            dwt_img.save(os.path.join(temp_name))
-            psnr_list[tap] = PSNR(WHALE_IMG_128, temp_name)
-            file_list[tap] = temp_name
-            size_list[tap] = float(k) / part_num
+            dwt_img.save(temp_name)
+            # psnr_list[tap] = PSNR(WHALE_IMG_128, temp_name)
+            # file_list[tap] = temp_name
+            # size_list[tap] = float(k) / part_num
         except:
             print('spiht decode error !!')
-        tap += 1
-    res = pd.DataFrame({'psnr':psnr_list, 
-        'size':size_list, 
-        'file_list':file_list})
-    res.to_csv(os.path.join(test_res_dir, 'res.csv'))
+        # tap += 1
+    # res = pd.DataFrame({'psnr':psnr_list, 
+    #     'size':size_list, 
+    #     'file_list':file_list})
+    # res.to_csv(os.path.join(test_res_dir, 'res.csv'))
     # compose_images(test_res_dir, compose_dir, 17, 5)
 
 def compose_images(IMAGES_PATH, IMAGE_SAVE_PATH, IMAGE_ROW, IMAGE_COLUMN):
@@ -432,7 +433,7 @@ if __name__ == '__main__':
 #      psnr = PSNR(WHALE_IMG, WHALE_IMG_NEW)
     #  print 'psnr : ', psnr
     #  print 'mse : ', MSE_RGB(WHALE_IMG, WHALE_IMG_NEW)
-    see_separate_part()
-    # progressive_test()
+    # see_separate_part()
+    progressive_test()
     # main()
     # compose_images('F:\lab_code\img_dwt\simulation\processing\Wed_Aug_21_17_12_51_2019', os.path.join('F:\lab_code\img_dwt\simulation\processing\Wed_Aug_21_17_12_51_2019', '1.bmp'), 15,5)

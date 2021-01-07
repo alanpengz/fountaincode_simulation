@@ -658,23 +658,17 @@ def test_ew_feedback_fountain():
             ack_num = 0
             ew_drop = None
             while not glass.isDone():
-                # Timer(0.1, send_n_recv)
                 a_drop = fountain.droplet()       # send
                 ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, a_drop.process)
 
                 glass.addDroplet(ew_drop)          # recv
-                if(glass.dropid >= K):
+
+                if(glass.is_w1_done(0.6)):
                     glass.all_at_once = True
                     fountain.all_at_once = True
                     # 之后每10个包反馈进度
-                    if((glass.dropid-K)%25== 0):
-                        # Timer(1.8, sender_gets_process)
+                    if((glass.dropid - glass.w1_done_dropid)%30== 0):
 
-                        # 或者按包数：
-                        # process = glass.getProcess()
-                        # tmp_dropid = glass.dropid
-                        # if(glass.dropid-tmp_dropid==18):
-                        #     sender_get_process(process)
                         ack_num += 1
                         fountain.chunk_process = glass.getProcess()
                 
@@ -693,7 +687,7 @@ def test_ew_feedback_fountain():
         res = pd.DataFrame({'num_chunks':num_chunks_list, 
             'times':times_list, 
             'drop_num_used':drop_num_used_list})
-        res.to_csv(os.path.join(SIM_PATH, 'RSD_EW_LT/drop改ew_drop后/K_25/feedback_EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+        res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/反馈无延迟(w1done_30)/feedback_EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
         avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
         avg_idx += 1
@@ -702,7 +696,7 @@ def test_ew_feedback_fountain():
     
     avg_res = pd.DataFrame({'K': [ii.split('.')[0] for ii in suffix_list], 
             'avgs':avg_drops_list, 'feedback_packet_avgs':avg_acknums_list})
-    avg_res.to_csv(os.path.join(SIM_PATH, 'RSD_EW_LT/drop改ew_drop后/K_25/feedback_EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+    avg_res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/反馈无延迟(w1done_30)/feedback_EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 def test_ew_w1pro_overhead():
     w1_pro_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -766,8 +760,8 @@ if __name__ == "__main__":
     # test_LT_fountain()
     # test_LT_feedback_fountain()
     # test_ew_fountain()
-    # test_ew_feedback_fountain()
-    test_ew_w1pro_overhead()
+    test_ew_feedback_fountain()
+    # test_ew_w1pro_overhead()
 
     pass
 

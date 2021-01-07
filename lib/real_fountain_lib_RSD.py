@@ -484,7 +484,7 @@ suffix_list = ['152.txt']
 
 suffix_list = ['115.txt']
 
-suffix_list = ['50.txt', '100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
+# suffix_list = ['50.txt', '100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
 # suffix_list = ['900.txt','950.txt','1000.txt']
 def test_LT_fountain():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
@@ -875,9 +875,9 @@ if __name__ == "__main__":
     # test_LT_fountain()
     # test_LT_feedback_fountain()
     # test_ew_fountain()
-    # test_ew_feedback_fountain()
+    test_ew_feedback_fountain()
     # test_ew_w1pro_overhead()
-    test_feedback_ew_w1pro_overhead()
+    # test_feedback_ew_w1pro_overhead()
 
     pass
 

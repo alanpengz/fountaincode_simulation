@@ -207,6 +207,7 @@ class Sender:
             start = i * each_chunk_bit_size
             end = min((i + 1) * each_chunk_bit_size, len(m_list[0]))
 
+            # # 这里应该将三个比特流文件按each_chunk_bit_size=1并串转换成spiht压缩比特流，之后再转字节。才能得到渐进传输的效果
             m_bytes += m_list[0][start: end].tobytes()
             m_bytes += m_list[1][start: end].tobytes()
             m_bytes += m_list[2][start: end].tobytes()
