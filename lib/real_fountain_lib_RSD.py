@@ -219,6 +219,7 @@ class Fountain(object):
 
         self.func_id = 0
         self.feedback_idx = 0
+        self.dropid = 0
 
     def show_info(self):
         logging.info('Fountain info')
@@ -227,6 +228,7 @@ class Fountain(object):
         logging.info('num_chunks: {}'.format(self.num_chunks))
 
     def droplet(self):
+        self.dropid += 1
         self.updateSeed()
         ### 修改
         if not self.all_at_once:
@@ -276,7 +278,10 @@ class EW_Fountain(Fountain):
         self.func_id = 0
         self.feedback_idx = 0
 
+        self.dropid = 0
+
     def droplet(self):
+        self.dropid += 1
         self.updateSeed()
         if not self.all_at_once:
             self.chunk_selected = self.EW_robust_RandChunkNums(self.num_chunks)
@@ -482,11 +487,11 @@ class Glass:
 suffix_list = ['123.txt']
 suffix_list = ['152.txt']
 
-suffix_list = ['115.txt']
+# suffix_list = ['115.txt']
 
-# suffix_list = ['50.txt', '100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
+suffix_list = ['50.txt', '100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
 # suffix_list = ['900.txt','950.txt','1000.txt']
-def test_LT_fountain():
+def test_LT_fountain_K():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
     avg_drops_list = [0]*len(suffix_list)
     avg_idx = 0
@@ -530,7 +535,7 @@ def test_LT_fountain():
             'avgs':avg_drops_list})
     avg_res.to_csv(os.path.join(SIM_PATH, 'avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
-def test_LT_feedback_fountain():
+def test_LT_feedback_fountain_K():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
     avg_drops_list = [0]*len(suffix_list)
     avg_idx = 0
@@ -591,7 +596,7 @@ def test_LT_feedback_fountain():
             'avgs':avg_drops_list, 'feedback_packet_avgs':avg_acknums_list})
     avg_res.to_csv(os.path.join(SIM_PATH, 'RSD_LT/K_25/feedback_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
-def test_ew_fountain():
+def test_ew_fountain_K():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
     avg_drops_list = [0]*len(suffix_list)
     avg_idx = 0
@@ -635,7 +640,7 @@ def test_ew_fountain():
             'avgs':avg_drops_list})
     avg_res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/no_feedback/EW_avgs(K=115)' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
-def test_ew_feedback_fountain():
+def test_ew_feedback_fountain_K():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
     avg_drops_list = [0]*len(suffix_list)
     avg_idx = 0
@@ -665,8 +670,9 @@ def test_ew_feedback_fountain():
                 else:
                     ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, process=glass.process_history[a_drop.feedback_idx], func_id = a_drop.func_id, feedback_idx = a_drop.feedback_idx)
 
-    
-                glass.addDroplet(ew_drop)          # recv
+                # 0.4丢包率
+                if fountain.dropid%25!=0:
+                    glass.addDroplet(ew_drop)          # recv
 
                 # n1 = round(0.8*K)
                 # n2 = 30
@@ -684,19 +690,19 @@ def test_ew_feedback_fountain():
                 #         ack_num += 1
                 
                 # 对比方案：w1done之后每30个包反馈
-                n2 = 30
-                if(glass.is_w1_done(0.6)):
-                    # 获得反馈时进度
-                    if (glass.dropid - glass.w1_done_dropid) % n2== 0:
-                        glass.process = glass.getProcess()
-                        glass.process_history.append(glass.process)
-                        glass.feedback_dropid = glass.dropid
-                    # 发送端延迟获得反馈，这里可能随机收到[18*(1-per), 18]个
-                    if(glass.dropid - glass.feedback_dropid == 18):
-                        fountain.all_at_once = True
-                        fountain.chunk_process = glass.process
-                        fountain.feedback_idx = ack_num
-                        ack_num += 1
+                    n2 = 30
+                    if(glass.is_w1_done(0.6)):
+                        # 获得反馈时进度
+                        if (glass.dropid - glass.w1_done_dropid) % n2== 0:
+                            glass.process = glass.getProcess()
+                            glass.process_history.append(glass.process)
+                            glass.feedback_dropid = glass.dropid
+                        # 发送端延迟获得反馈，这里可能随机收到[18*(1-per), 18]个
+                        if(glass.dropid - glass.feedback_dropid == 18):
+                            fountain.all_at_once = True
+                            fountain.chunk_process = glass.process
+                            fountain.feedback_idx = ack_num
+                            ack_num += 1
                 
 
             # logging.info('+++++++++++++++++++++++++++++')
@@ -713,7 +719,7 @@ def test_ew_feedback_fountain():
         res = pd.DataFrame({'num_chunks':num_chunks_list, 
             'times':times_list, 
             'drop_num_used':drop_num_used_list})
-        res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/feedback/w1done_30/feedback_RSD_EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+        res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/feedback/w1done_30/PER0.4/feedback_RSD_EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
         avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
         avg_idx += 1
@@ -722,7 +728,7 @@ def test_ew_feedback_fountain():
     
     avg_res = pd.DataFrame({'K': [ii.split('.')[0] for ii in suffix_list], 
             'avgs':avg_drops_list, 'feedback_packet_avgs':avg_acknums_list})
-    avg_res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/feedback/w1done_30/feedback_RSD_EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+    avg_res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/feedback/w1done_30/PER0.4/feedback_RSD_EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 def test_ew_w1pro_overhead():
     w1_pro_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -817,7 +823,7 @@ def test_feedback_ew_w1pro_overhead():
                         w1_drops_used_list[times] = glass.w1_done_dropid
                         w1_done = True
 
-                n1 = round(0.8*K)
+                n1 = round(0.6*K)
                 n2 = 30
                 if(glass.dropid >= n1):
                     # 获得反馈时进度
@@ -858,7 +864,7 @@ def test_feedback_ew_w1pro_overhead():
             'times':times_list, 
             'w1_drops_used':w1_drops_used_list,
             'w2_drops_used':w2_drops_used_list})
-        res.to_csv(os.path.join(SIM_PATH, 'w1_pro选择/RSD反馈(0.8K_30)/feedback_EW_RSD(w1_size=0.6)_w1_pro=' + str(p) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+        res.to_csv(os.path.join(SIM_PATH, 'w1_pro选择/RSD反馈(0.6K_30)/feedback_EW_RSD(w1_size=0.6)_w1_pro=' + str(p) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
         w1_avg_drops_list[avg_idx] = float(sum(w1_drops_used_list) / len(w1_drops_used_list))
         w2_avg_drops_list[avg_idx] = float(sum(w2_drops_used_list) / len(w2_drops_used_list))
@@ -867,18 +873,206 @@ def test_feedback_ew_w1pro_overhead():
     avg_res = pd.DataFrame({'w1_pro': w1_pro_list, 
             'w1_avgs': w1_avg_drops_list,
             'w2_avgs': w2_avg_drops_list})
-    avg_res.to_csv(os.path.join(SIM_PATH, 'w1_pro选择/RSD反馈(0.8K_30)/feedback_EW_RSD(w1_size=0.6)_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+    avg_res.to_csv(os.path.join(SIM_PATH, 'w1_pro选择/RSD反馈(0.6K_30)/feedback_EW_RSD(w1_size=0.6)_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 
+
+per_list = [0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5]
+suffix_list = ['115.txt']
+def test_LT_fountain_per():
+    file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
+    avg_drops_list = [0]*len(per_list)
+    avg_idx = 0
+
+    for per in per_list:
+        m = open(file_list[0], 'r').read()
+        # 测试1000次
+        tmp_per_list = [0]*100
+        times_list = [0]*100
+        drop_num_used_list = [0]*100
+
+        times = 0
+        K = 0
+        while times < 100:
+            fountain = Fountain(m, 1)
+            K = fountain.num_chunks
+            glass = Glass(fountain.num_chunks)
+            while not glass.isDone():
+                a_drop = fountain.droplet()       # send
+
+                interval = round(1/per)
+                if fountain.dropid % interval!=0:
+                    glass.addDroplet(a_drop)          # recv
+                # logging.info('+++++++++++++++++++++++++++++')
+                # logging.info(glass.getString())
+
+            tmp_per_list[times] = per
+            times_list[times] = times
+            drop_num_used_list[times] = glass.dropid
+
+            logging.info("per=" + str(per) +" times: " + str(times) + 'done, receive_drop_used: ' + str(glass.dropid))
+            times += 1
+
+        # res = pd.DataFrame({'num_chunks':num_chunks_list, 
+        #     'times':times_list, 
+        #     'drop_num_used':drop_num_used_list})
+        # res.to_csv(os.path.join(SIM_PATH, 'K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+
+        avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
+        avg_idx += 1
+    
+    avg_res = pd.DataFrame({'per': per_list, 
+            'avgs':avg_drops_list})
+    avg_res.to_csv(os.path.join(SIM_PATH, 'PER对喷泉码的影响/RSD_LT_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+
+def test_ew_fountain_per():
+    file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
+    avg_drops_list = [0]*len(per_list)
+    avg_idx = 0
+
+    for per in per_list:
+        m = open(file_list[0], 'r').read()
+        # 测试1000次
+        tmp_per_list = [0]*100
+        times_list = [0]*100
+        drop_num_used_list = [0]*100
+
+        times = 0
+        K = 0
+        while times < 100:
+            fountain = EW_Fountain(m, 1)
+            K = fountain.num_chunks
+            glass = Glass(fountain.num_chunks)
+            ew_drop = None
+            while not glass.isDone():
+                a_drop = fountain.droplet()       # send
+                if a_drop.func_id==0:
+                    ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, process=[], func_id = a_drop.func_id, feedback_idx = a_drop.feedback_idx)
+                else:
+                    ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, process=glass.process_history[a_drop.feedback_idx], func_id = a_drop.func_id, feedback_idx = a_drop.feedback_idx)
+
+                interval = round(1/per)
+                if fountain.dropid % interval!=0:
+                    glass.addDroplet(ew_drop)          # recv
+
+            tmp_per_list[times] = per
+            times_list[times] = times
+            drop_num_used_list[times] = glass.dropid
+
+            logging.info("EW per=" + str(per) +" times: " + str(times) + 'done, receive_drop_used: ' + str(glass.dropid))
+            times += 1
+
+        # res = pd.DataFrame({'num_chunks':num_chunks_list, 
+        #     'times':times_list, 
+        #     'drop_num_used':drop_num_used_list})
+        # res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/no_feedback/EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+
+        avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
+        avg_idx += 1
+    
+    avg_res = pd.DataFrame({'per': per_list, 
+            'avgs':avg_drops_list})
+    avg_res.to_csv(os.path.join(SIM_PATH, 'PER对喷泉码的影响/RSD_EW_LT_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+
+def test_ew_feedback_fountain_per():
+    file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
+    avg_drops_list = [0]*len(per_list)
+    avg_idx = 0
+    avg_acknums_list = [0]*len(per_list)
+    ack_idx = 0
+
+    for per in per_list:
+        m = open(file_list[0], 'r').read()
+        # 测试1000次
+        tmp_per_list = [0]*100
+        times_list = [0]*100
+        drop_num_used_list = [0]*100
+        acknums_list = [0]*100
+
+        times = 0
+        K = 0
+        while times < 100:
+            fountain = EW_Fountain(m, 1)
+            K = fountain.num_chunks
+            glass = Glass(fountain.num_chunks)
+            ack_num = 0
+            ew_drop = None
+            while not glass.isDone():
+                a_drop = fountain.droplet()       # send
+                if a_drop.func_id==0:
+                    ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, process=[], func_id = a_drop.func_id, feedback_idx = a_drop.feedback_idx)
+                else:
+                    ew_drop = EW_Droplet(a_drop.data, a_drop.seed, a_drop.num_chunks, process=glass.process_history[a_drop.feedback_idx], func_id = a_drop.func_id, feedback_idx = a_drop.feedback_idx)
+
+                interval = round(1/per)
+                if fountain.dropid % interval!=0:
+                    glass.addDroplet(ew_drop)          # recv
+
+                # n1 = round(0.8*K)
+                # n2 = 30
+                # if(glass.dropid >= n1):
+                #     # 获得反馈时进度
+                #     if (glass.dropid - n1) % n2== 0:
+                #         glass.process = glass.getProcess()
+                #         glass.process_history.append(glass.process)
+                #         glass.feedback_dropid = glass.dropid
+                #     # 发送端延迟获得反馈，这里可能随机收到[18*(1-per), 18]个
+                #     if(glass.dropid - glass.feedback_dropid == 18):
+                #         fountain.all_at_once = True
+                #         fountain.chunk_process = glass.process
+                #         fountain.feedback_idx = ack_num
+                #         ack_num += 1
+                
+                # 对比方案：w1done之后每30个包反馈
+                    n2 = 30
+                    if(glass.is_w1_done(0.6)):
+                        # 获得反馈时进度
+                        if (glass.dropid - glass.w1_done_dropid) % n2== 0:
+                            glass.process = glass.getProcess()
+                            glass.process_history.append(glass.process)
+                            glass.feedback_dropid = glass.dropid
+                        # 发送端延迟获得反馈，这里可能随机收到[18*(1-per), 18]个
+                        if(glass.dropid - glass.feedback_dropid == 18):
+                            fountain.all_at_once = True
+                            fountain.chunk_process = glass.process
+                            fountain.feedback_idx = ack_num
+                            ack_num += 1
+            # logging.info('+++++++++++++++++++++++++++++')
+            # logging.info(glass.getString())
+
+            tmp_per_list[times] = per
+            times_list[times] = times
+            drop_num_used_list[times] = glass.dropid
+            acknums_list[times] = ack_num
+
+            logging.info("feedback_EW_per=" + str(per) +" times: " + str(times) + 'done, receive_drop_used: ' + str(glass.dropid))
+            times += 1
+
+        # res = pd.DataFrame({'per':tmp_per_list, 
+        #     'times':times_list, 
+        #     'drop_num_used':drop_num_used_list})
+        # res.to_csv(os.path.join(SIM_PATH, 'PER对喷泉码的影响/feedback_RSD_EW_per=' + '_'+ str(per) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+
+        avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
+        avg_idx += 1
+        avg_acknums_list[ack_idx] = float(sum(acknums_list) / len(acknums_list))
+        ack_idx += 1
+    
+    avg_res = pd.DataFrame({'per': per_list, 
+            'avgs':avg_drops_list, 'feedback_packet_avgs':avg_acknums_list})
+    avg_res.to_csv(os.path.join(SIM_PATH, 'PER对喷泉码的影响/feedback_RSD_EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 if __name__ == "__main__":
     # test_LT_fountain()
     # test_LT_feedback_fountain()
     # test_ew_fountain()
-    test_ew_feedback_fountain()
+    # test_ew_feedback_fountain()
     # test_ew_w1pro_overhead()
     # test_feedback_ew_w1pro_overhead()
 
+    test_LT_fountain_per()
+    test_ew_fountain_per()
+    test_ew_feedback_fountain_per()
     pass
 
     
