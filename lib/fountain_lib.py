@@ -484,7 +484,7 @@ suffix_list = ['152.txt']
 suffix_list = ['115.txt']
 
 suffix_list = ['50.txt', '100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
-suffix_list = ['700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
+# suffix_list = ['700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
 def test_LT_fountain():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
     avg_drops_list = [0]*len(suffix_list)
@@ -598,13 +598,13 @@ def test_ew_fountain():
     for f in file_list:
         m = open(f, 'r').read()
         # 测试1000次
-        num_chunks_list = [0]*200
-        times_list = [0]*200
-        drop_num_used_list = [0]*200
+        num_chunks_list = [0]*500
+        times_list = [0]*500
+        drop_num_used_list = [0]*500
 
         times = 0
         K = 0
-        while times < 200:
+        while times < 500:
             fountain = EW_Fountain(m, 1)
             K = fountain.num_chunks
             glass = Glass(fountain.num_chunks)
@@ -625,14 +625,14 @@ def test_ew_fountain():
         res = pd.DataFrame({'num_chunks':num_chunks_list, 
             'times':times_list, 
             'drop_num_used':drop_num_used_list})
-        res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/no_feedback/EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+        res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/no_feedback/500次/EW_K' + '_'+ str(K) + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
         avg_drops_list[avg_idx] = float(sum(drop_num_used_list) / len(drop_num_used_list))
         avg_idx += 1
     
     avg_res = pd.DataFrame({'K': [ii.split('.')[0] for ii in suffix_list], 
             'avgs':avg_drops_list})
-    avg_res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/no_feedback/EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
+    avg_res.to_csv(os.path.join(SIM_PATH, 'EW(0.6, 0.6)/RSD/no_feedback/500次/EW_avgs' + '_' + time.asctime().replace(' ', '_').replace(':', '_') + '.csv'),  mode='a')
 
 def test_ew_feedback_fountain():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
