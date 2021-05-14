@@ -92,7 +92,7 @@ class Receiver:
         return ''.join(x or ' _ ' for x in self.entries)
 
 
-
+'''不同码长K与译码开销的关系'''
 suffix_list = ['50.txt', '100.txt', '150.txt', '200.txt', '250.txt', '300.txt', '350.txt', '400.txt', '450.txt', '500.txt', '550.txt', '600.txt', '650.txt', '700.txt','750.txt','800.txt','850.txt','900.txt','950.txt','1000.txt']
 def test_loopsend_K():
     file_list = [DOC_PATH + '/text' + ii for ii in suffix_list]
@@ -241,7 +241,7 @@ def test_feedback_loopsend_K():
 
 
 
-
+'''不同per与译码开销的关系'''
 # suffix_list = ['115.txt']
 per_list = [0,0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1,0.125,0.15,0.175,0.2,0.225,0.25,0.275,0.3,0.325,0.35,0.375,0.4,0.425,0.45,0.475,0.5]
 def test_loopsend_per():

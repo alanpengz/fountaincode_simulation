@@ -18,6 +18,7 @@ SIM_PATH = os.path.join(LIB_PATH, '../simulation')
 logging.basicConfig(level=logging.INFO, 
         format="%(asctime)s %(filename)s:%(lineno)s %(levelname)s-%(message)s",)
 
+# 最后一块大小不同就补'X'
 def charN(str, N):
     if N < len(str):
         return str[N]
@@ -30,8 +31,6 @@ def xor(str1, str2):
     ，最后返回异或运算的数字在ascii 表中的字符
     '''
     length = max(len(str1),len(str2))
-    a1 = charN(str1, 700)
-    a2 = charN(str2, 700)
     return ''.join(chr(ord(charN(str1,i)) ^ ord(charN(str2,i))) for i in range(length))
 
 def x_o_r(bytes1, bytes2):  # 传入两个数，并返回它们的异或结果，结果为16进制数
@@ -759,11 +758,9 @@ def test_ew_w1pro_overhead():
 if __name__ == "__main__":
     # test_LT_fountain()
     # test_LT_feedback_fountain()
-    test_ew_fountain()
+    # test_ew_fountain()
     # test_ew_feedback_fountain()
     # test_ew_w1pro_overhead()
-
     pass
 
-    
 
